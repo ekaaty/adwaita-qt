@@ -1,59 +1,57 @@
-project(Adwaita)
+project(Inspire)
 
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.0)
 
-set(ADWAITAQT_VERSION_MAJOR 1)
-set(ADWAITAQT_VERSION "1.4.50")
+set(KF5_MIN_VERSION "5.66.0")
 
-option(USE_QT6 "Use Qt6 instead of Qt5" OFF)
-
-if (USE_QT6)
-    set(QT_MIN_VERSION "6.2.0")
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(ADWAITAQT_SUFFIX "6")
-else()
-    set(QT_MIN_VERSION "5.15.2")
-    set(CMAKE_CXX_STANDARD 11)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(ADWAITAQT_SUFFIX "")
-endif()
+include(GenerateExportHeader)
+include(WriteBasicConfigVersionFile)
+include(FeatureSummary)
 
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
+add_definitions(-std=c++11)
 
-include(GNUInstallDirs)
+find_package(ECM ${KF5_MIN_VERSION} REQUIRED NO_MODULE)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR} ${CMAKE_SOURCE_DIR}/cmake)
 
-if (USE_QT6)
-    find_package(QT NAMES Qt6 COMPONENTS Core DBus Gui Widgets REQUIRED)
-else()
-    find_package(QT NAMES Qt5 COMPONENTS Core DBus Gui Widgets REQUIRED)
-endif()
+include(ECMInstallIcons)
+include(KDEInstallDirs)
+include(KDECMakeSettings)
+include(KDECompilerSettings NO_POLICY_SCOPE)
+include(KDEClangFormat)
 
-find_package(Qt${QT_VERSION_MAJOR} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
-    Core
-    DBus
-    Gui
-    Widgets
-)
-
-if (NOT APPLE AND NOT WIN32 AND NOT USE_QT6)
-    find_package(XCB 1.10 COMPONENTS XCB)
-
-    find_package(Qt${QT_VERSION_MAJOR}X11Extras ${QT_MIN_VERSION})
-    set(ADWAITA_HAVE_X11 ${XCB_FOUND} AND ${Qt5X11Extras_FOUND})
-endif()
-
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Gui REQUIRED)
+find_package(Qt5Widgets REQUIRED)
+find_package(Qt5DBus REQUIRED)
+set(QT_QTGUI_LIBRARY Qt5::Gui Qt5::Widgets)
+set(QT_QTCORE_LIBRARY Qt5::Core)
+set(QT_QTDBUS_LIBRARY Qt5::DBus)
+#target_link_libraries(${LIBRARY_NAME} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
+set(QT_VERSION_NUMBER "5")
+get_target_property(REAL_QMAKE_EXECUTABLE ${Qt5Core_QMAKE_EXECUTABLE}
+                    IMPORTED_LOCATION)
 if (NOT QT_PLUGINS_DIR)
-    if (NOT USE_QT6)
-        get_target_property(REAL_QMAKE_EXECUTABLE ${Qt5Core_QMAKE_EXECUTABLE}
-                            IMPORTED_LOCATION)
-        execute_process(COMMAND "${REAL_QMAKE_EXECUTABLE}" -query QT_INSTALL_PLUGINS
-                        OUTPUT_VARIABLE QT_PLUGINS_DIR
-                        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-    else()
-        set(QT_PLUGINS_DIR ${QT6_INSTALL_PLUGINS})
-    endif()
+    execute_process(COMMAND "${REAL_QMAKE_EXECUTABLE}" -query QT_INSTALL_PLUGINS
+                    OUTPUT_VARIABLE QT_PLUGINS_DIR
+                    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-add_subdirectory(src)
+find_package(KF5Package ${KF5_MIN_VERSION} CONFIG REQUIRED)
+
+if (NOT CMAKE_INSTALL_PREFIX)
+    set (CMAKE_INSTALL_PREFIX "/usr/local")
+endif()
+
+if (NOT DATA_INSTALL_DIR)
+    set (DATA_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share")
+endif()
+if (NOT THEME_INSTALL_DIR)
+    set (THEME_INSTALL_DIR "${DATA_INSTALL_DIR}/themes")
+endif()
+
+set(INSPIRE_THEME_DIR "${THEME_INSTALL_DIR}/Inspire/qt")
+
+add_subdirectory(style)
+
+feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
